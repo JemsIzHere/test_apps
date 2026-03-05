@@ -3,7 +3,7 @@ import requests
 import re
 
 # URL for AQW Wiki
-url = "http://aqwwiki.wikidot.com" 
+url = "http://aqwwiki.wikidot.com/" 
 
 print("Input item:")
 search_item = input()
@@ -12,7 +12,7 @@ search_item = search_item.replace(" ", "-")
 # for abbreviations (sample)
 if search_item.lower() == "nsod":
     # necrotic sword of doom sword
-    search_item = "/necrotic-sword-of-doom-sword"
+    search_item = "necrotic-sword-of-doom-sword"
 
 print(f'Main Page: {url}{search_item}')
 
@@ -24,13 +24,13 @@ doc = soup(result.text, "html.parser")
 merge_items = []
 merge_links = []
 merge_li = None
-for li in doc.find_all('li'):
-    if "Merge the following:" in li.get_text():
-        merge_li = li
-        break
+
+# check merge
 
 # material finder
 def find_materials(li):
+
+
     if merge_li:
         
         parent_ul = merge_li.find_parent('ul')
@@ -39,20 +39,20 @@ def find_materials(li):
             
             all_items = parent_ul.find_all('li')
             
-            # adds item name and qty to merge_items
             for i, item_li in enumerate(all_items[1:], 1):
 
                 # adds link to merge_links
                 a_tag = item_li.find('a')
                 if a_tag:
                     merge_links.append(a_tag.get('href'))
-                merge_items.append(item_li.get_text(strip=True))
                 
-
-        else:
-            return print("No parent ul found for the li tag")
+                # adds item name and qty to merge_items
+                merge_items.append(f'/{item_li.get_text(strip=True)}')
+                
+        # else:
+        #     return print("cannot be merged.")
     else:
-        return print("No li tag containing 'Merge the following:' found")
+        return print("Cannot be merged.")
 
 def parse_item(line):
     line = line.strip()
