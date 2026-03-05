@@ -25,34 +25,34 @@ merge_items = []
 merge_links = []
 merge_li = None
 
-# check merge
+def check_merge():
+    for li in doc.find_all('li'):
+        if "Merge the following:" in li.get_text():
+            return li
+    return None
+
+def add_to_merge_list(items):
+    for item_li in items[1:]:
+
+        a_tag = item_li.find('a')
+        if a_tag:
+            merge_links.append(a_tag.get('href'))
+        
+        merge_items.append(f'{item_li.get_text(strip=True)}')
 
 # material finder
 def find_materials(li):
 
+    merge_li = check_merge()
 
     if merge_li:
         
         parent_ul = merge_li.find_parent('ul')
+        all_items = parent_ul.find_all('li')
+        add_to_merge_list(all_items)
         
-        if parent_ul:
-            
-            all_items = parent_ul.find_all('li')
-            
-            for i, item_li in enumerate(all_items[1:], 1):
+    return print("Cannot be merged.")
 
-                # adds link to merge_links
-                a_tag = item_li.find('a')
-                if a_tag:
-                    merge_links.append(a_tag.get('href'))
-                
-                # adds item name and qty to merge_items
-                merge_items.append(f'/{item_li.get_text(strip=True)}')
-                
-        # else:
-        #     return print("cannot be merged.")
-    else:
-        return print("Cannot be merged.")
 
 def parse_item(line):
     line = line.strip()
