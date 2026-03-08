@@ -1,19 +1,27 @@
 from bs4 import BeautifulSoup as soup
 import requests
+import json
 import re
 
-# URL for AQW Wiki
-url = "http://aqwwiki.wikidot.com" 
 
 merge_items = []
 merge_links = []
+item_tag_url = []
+item_tags = ["ac", "merge", "0 ac"]
 merge_li = None
 
-print("Input item:")
-search_item = input()
-search_item = search_item.replace(" ", "-")
+url = "http://aqwwiki.wikidot.com" 
+ac_url = None
+merge_url = None
 
-result = requests.get(f'{url}/{search_item}')
+with open('item_tag.json', 'r') as f:
+    item_types = json.load(f)
+
+print("Input item:")
+search_item = input().lower()
+search_url = search_item.replace(" ", "-")
+
+result = requests.get(f'{url}/{search_url}')
 doc = soup(result.text, "html.parser")
 
 def check_item_exists():
@@ -26,14 +34,45 @@ def check_item_exists():
 def check_item():
 
     if check_item_exists():
-        print(f'Main Page: {url}/{search_item}')
+        print(f'Main Page: {url}/{search_url}')
+        check_merge()
+        check_item_tag()
+        
 
-    check_merge()
+def inspect_page():
+    page_title = doc.find(id = "page-title").get_text().replace("\n", "").strip().lower()
+    page_content = doc.find(id = "page-content")
 
-# for abbreviations (sample)
-# if search_item.lower() == "nsod":
-#     # necrotic sword of doom sword
-#     search_item = "necrotic-sword-of-doom-sword"
+    if search_item in page_title:
+        for a in page_content.find_all('a'):
+            item_tag_url.append(a.get('href'))
+    
+def check_item_tag():
+    for link in item_tag_url:
+        search_url = link.replace(" ", "-")
+
+        #not good since it finds anyth with ac or merge 
+        if "ac" in link:
+            ac_url = f'{url}{search_url}'
+            return ac_url
+            # print(f'AC Page: {url}{search_url}')
+            
+        if "merge" in link:
+            merge_url = f'{url}{search_url}'
+            return merge_url
+            # print(f'Merge Page: {url}{search_url}')
+
+    if check_tag(search_url, item_tag_url):
+        merge_url = f'{url}{search_url}'
+        return merge_url
+        
+def check_tag(search_url, item_tags):
+    return any(tag in search_url for tag in item_tags)
+
+# def check_item_type():
+#     if item_tag_url
+
+#def check_quest():
 
 
 def check_merge():
@@ -84,9 +123,16 @@ def parse_item(line):
     # No quantity found
     return {'name': line, 'qty': None}
 
+is_quest = False
+is_ac = False
 
+inspect_page()
 check_item() 
-find_merge_materials()
+
+if check_merge():
+    find_merge_materials()
+
+
 
 parsed = [parse_item(item) for item in merge_items]
 
