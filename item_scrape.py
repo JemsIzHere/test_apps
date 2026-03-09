@@ -57,11 +57,6 @@ def check_item_tag(item_tag_url, item_tags):
             #     found_tags.append(part)
             print(f"Item tag found: {part} in link: {url}{link}")
     return found_tags
-    
-
-def check_item_type():
-    if item_tag_url:
-        return None
 
 #def check_quest():
 
