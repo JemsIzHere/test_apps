@@ -7,8 +7,8 @@ import re
 merge_items = []
 merge_links = []
 item_tag_url = []
-found_tags = []
-item_tags = ["ac", "merge", "0 ac"]
+item_links = []
+item_tags = ["ac", "merge", "0-ac"]
 merge_li = None
 
 url = "http://aqwwiki.wikidot.com" 
@@ -25,7 +25,7 @@ search_url = search_item.replace(" ", "-")
 result = requests.get(f'{url}/{search_url}')
 doc = soup(result.text, "html.parser")
 
-def check_item_exists():
+def item_exists():
     for p in doc.find_all('strong'):
         if "This page doesn't exist yet!" in p.get_text():
             print("Item does not exist.")
@@ -34,10 +34,10 @@ def check_item_exists():
 
 def check_item():
 
-    if check_item_exists():
+    if item_exists():
         print(f'Main Page: {url}/{search_url}')
         check_merge()
-        check_item_tag(item_tag_url, item_tags)
+
         
 
 def inspect_page():
@@ -48,18 +48,31 @@ def inspect_page():
         for a in page_content.find_all('a'):
             item_tag_url.append(a.get('href'))
     
-def check_item_tag(item_tag_url, item_tags):
+
+def search_item_link(item_tag_url, item_tags):
+    for link in item_tag_url:
+        part = link.split('-')[-1]
+        if check_item_tag(part) or check_item_type(part):
+            item_links.append(link)
+
+
+def check_item_tag(link):
+    if any(tag in link for tag in item_tags):
+        return True
+    return False
+        
+# should be a single method but data is from wiki
+def check_item_type(link):
+    if any(t in link for t in item_types):
+        return True
+    return False
+
+
+def split_link(item_tag_url):
     for link in item_tag_url:
         parts = link.split('-')
         for part in parts:
-            # if part in item_tags and part not in found_tags:
-            #     print(f"Item tag found: {part} in link: {url}{link}")
-            #     found_tags.append(part)
-            print(f"Item tag found: {part} in link: {url}{link}")
-    return found_tags
-
-#def check_quest():
-
+            print(part)
 
 def check_merge():
     for li in doc.find_all('li'):
@@ -112,9 +125,13 @@ def parse_item(line):
 is_quest = False
 is_ac = False
 
-inspect_page()
 check_item() 
-#check_item_tag(search_url, item_tags)
+inspect_page()
+search_item_link(item_tag_url, item_tags)
+for item_link in item_links:
+    print(f'{url}{item_link}')
+
+
 
 if check_merge():
     find_merge_materials()
