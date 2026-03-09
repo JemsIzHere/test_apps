@@ -116,8 +116,6 @@ inspect_page()
 check_item() 
 #check_item_tag(search_url, item_tags)
 
-#add
-
 if check_merge():
     find_merge_materials()
 
