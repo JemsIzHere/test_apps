@@ -7,6 +7,7 @@ import re
 merge_items = []
 merge_links = []
 item_tag_url = []
+found_tags = []
 item_tags = ["ac", "merge", "0 ac"]
 merge_li = None
 
@@ -36,7 +37,7 @@ def check_item():
     if check_item_exists():
         print(f'Main Page: {url}/{search_url}')
         check_merge()
-        check_item_tag()
+        check_item_tag(item_tag_url, item_tags)
         
 
 def inspect_page():
@@ -47,27 +48,16 @@ def inspect_page():
         for a in page_content.find_all('a'):
             item_tag_url.append(a.get('href'))
     
-def check_item_tag():
+def check_item_tag(item_tag_url, item_tags):
     for link in item_tag_url:
-        search_url = link.replace(" ", "-")
-
-        #not good since it finds anyth with ac or merge 
-        if "ac" in link:
-            ac_url = f'{url}{search_url}'
-            return ac_url
-            # print(f'AC Page: {url}{search_url}')
-            
-        if "merge" in link:
-            merge_url = f'{url}{search_url}'
-            return merge_url
-            # print(f'Merge Page: {url}{search_url}')
-
-    if check_tag(search_url, item_tag_url):
-        merge_url = f'{url}{search_url}'
-        return merge_url
-        
-def check_tag(search_url, item_tags):
-    return any(tag in search_url for tag in item_tags)
+        parts = link.split('-')
+        for part in parts:
+            # if part in item_tags and part not in found_tags:
+            #     print(f"Item tag found: {part} in link: {url}{link}")
+            #     found_tags.append(part)
+            print(f"Item tag found: {part} in link: {url}{link}")
+    return found_tags
+    
 
 # def check_item_type():
 #     if item_tag_url
@@ -128,6 +118,7 @@ is_ac = False
 
 inspect_page()
 check_item() 
+#check_item_tag(search_url, item_tags)
 
 if check_merge():
     find_merge_materials()
