@@ -59,8 +59,9 @@ def check_item_tag(item_tag_url, item_tags):
     return found_tags
     
 
-# def check_item_type():
-#     if item_tag_url
+def check_item_type():
+    if item_tag_url:
+        return None
 
 #def check_quest():
 
