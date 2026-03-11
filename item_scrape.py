@@ -76,11 +76,18 @@ def check_merge():
 # incomplete
 def check_ac_price():
     ac_page = None
-    doc = soup(ac_page.text, "html.parser")
     #get ac page
     for link in item_links:
         if "ac" in link[-1]:
             ac_page = f'{url}{link}'
+            
+    doc = soup(ac_page.text, "html.parser")
+    page_content = doc.find(id = "page-content")
+    for p in page_content.find_all("p"):
+        price = p.replace(" ","-")
+        if "ac" in price[-1].lower():
+            
+            return price
     
 
 
@@ -135,6 +142,7 @@ search_item_link(item_tag_url)
 for item_link in item_links:
     print(f'{url}{item_link}')
 
+check_ac_price()
 
 
 if check_merge():
