@@ -9,11 +9,8 @@ merge_links = []
 item_tag_url = []
 item_links = []
 item_tags = ["ac", "merge", "0-ac"]
-merge_li = None
 
 url = "http://aqwwiki.wikidot.com" 
-ac_url = None
-merge_url = None
 
 with open('item_tag.json', 'r') as f:
     item_types = json.load(f)
@@ -33,12 +30,9 @@ def item_exists():
     return True
 
 def check_item():
-
     if item_exists():
         print(f'Main Page: {url}/{search_url}')
         check_merge()
-
-        
 
 def inspect_page():
     page_title = doc.find(id = "page-title").get_text().replace("\n", "").strip().lower()
@@ -49,7 +43,7 @@ def inspect_page():
             item_tag_url.append(a.get('href'))
     
 
-def search_item_link(item_tag_url, item_tags):
+def search_item_link(item_tag_url):
     for link in item_tag_url:
         part = link.split('-')[-1]
         if check_item_tag(part) or check_item_type(part):
@@ -67,7 +61,6 @@ def check_item_type(link):
         return True
     return False
 
-
 def split_link(item_tag_url):
     for link in item_tag_url:
         parts = link.split('-')
@@ -79,6 +72,17 @@ def check_merge():
         if "Merge the following:" in li.get_text():
             return li
     return None
+
+# incomplete
+def check_ac_price():
+    ac_page = None
+    doc = soup(ac_page.text, "html.parser")
+    #get ac page
+    for link in item_links:
+        if "ac" in link[-1]:
+            ac_page = f'{url}{link}'
+    
+
 
 def add_to_merge_list(items):
     for item_li in items[1:]:
@@ -127,7 +131,7 @@ is_ac = False
 
 check_item() 
 inspect_page()
-search_item_link(item_tag_url, item_tags)
+search_item_link(item_tag_url)
 for item_link in item_links:
     print(f'{url}{item_link}')
 
