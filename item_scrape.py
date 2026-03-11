@@ -145,7 +145,6 @@ search_item_link(item_tag_url)
 for item_link in item_links:
     print(f'{url}{item_link}')
 
-check_ac_price()
 
 
 if check_merge():
