@@ -32,7 +32,8 @@ def item_exists():
 def check_item():
     if item_exists():
         print(f'Main Page: {url}/{search_url}')
-        check_merge()
+        return True
+    return False
 
 def inspect_page():
     page_title = doc.find(id = "page-title").get_text().replace("\n", "").strip().lower()
@@ -141,12 +142,16 @@ is_ac = False
 
 
 def simulate():
-    check_item() 
-    inspect_page()
-    search_item_link(item_tag_url)
+
+    if check_item():
+        inspect_page()
+        search_item_link(item_tag_url)
+
+        for i in item_links:
+            print(i)
 
 
-    
+
     # for item_link in item_links:
     #     print(f'{url}{item_link}')
     # if check_merge():
