@@ -29,11 +29,6 @@ def item_exists():
             return False
     return True
 
-def check_item():
-    if item_exists():
-        print(f'Main Page: {url}/{search_url}')
-        return True
-    return False
 
 def inspect_page():
     page_title = doc.find(id = "page-title").get_text().replace("\n", "").strip().lower()
@@ -74,25 +69,6 @@ def check_merge():
             return li
     return None
 
-def check_ac_price():
-    ac_url = None
-    
-    for link in item_links:
-        tag = link.split("-")[-1]
-        print(tag)
-        if "ac" in tag:
-            ac_url = f'{url}{link}'
-    
-    ac_page = requests.get(ac_url)
-    doc = soup(ac_page.text, "html.parser")
-    page_content = doc.find(id = "page-content")
-    ac_price = [p for p in page_content.find_all("p") if "Price:" in p.get_text()]
-   
-    for p in ac_price:
-        text = p.get_text()
-        match = re.search(r"\d+\s*AC", text)
-        if match:
-            return match.group(1)
 
 
 def add_to_merge_list(items):
@@ -141,14 +117,40 @@ is_quest = False
 is_ac = False
 
 
+class ac_tagged_items():
+
+    def check_ac_price():
+        ac_url = None
+        
+        for link in item_links:
+            tag = link.split("-")[-1]
+            print(tag)
+            if "ac" in tag:
+                ac_url = f'{url}{link}'
+        
+        ac_page = requests.get(ac_url)
+        doc = soup(ac_page.text, "html.parser")
+        page_content = doc.find(id = "page-content")
+        ac_price = [p for p in page_content.find_all("p") if "Price:" in p.get_text()]
+    
+        for p in ac_price:
+            text = p.get_text()
+            match = re.search(r"\d+\s*AC", text)
+            if match:
+                return match.group(1)
+
+
+
 def simulate():
 
-    if check_item():
-        inspect_page()
-        search_item_link(item_tag_url)
+    if item_exists():
+        print(f'Main Page: {url}/{search_url}')
 
-        for i in item_links:
-            print(i)
+    inspect_page()
+    search_item_link(item_tag_url)
+
+    for i in item_links:
+        print(i)
 
 
 
