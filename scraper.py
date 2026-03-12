@@ -23,13 +23,20 @@ class ItemPage:
                 return False
         return True
 
+    # needs to categorize ac, merge, item links and prints them.
     def get_links(self) -> list:
         links = []
         page_title = self.doc.find(id="page-title").get_text().strip().lower()
         page_content = self.doc.find(id="page-content")
-        if self.search_item in page_title:
-            for a in page_content.find_all('a'):
-                links.append(a.get('href'))
+
+        if not page_content:
+            return links
+
+        for a in page_content.find_all('a'):
+            href = a.get('href')
+            if href:                         
+                links.append(href)
+
         return links
 
 
@@ -51,6 +58,18 @@ class ACItem:
                 return False
         return True
 
+    def get_price(self) -> str | None:
+        page_content = self.doc.find(id="page-content")
+        if not page_content:
+            return None
+
+        ac_price = [p for p in page_content.find_all("p") if "Price:" in p.get_text()]
+        for p in ac_price:
+            match = re.search(r"(\d+)\s*AC", p.get_text())
+            if match:
+                self.price = match.group(1)
+                return self.price
+        return None
 
 class MergeItem:
 
