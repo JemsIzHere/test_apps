@@ -139,24 +139,25 @@ def parse_item(line):
 is_quest = False
 is_ac = False
 
-check_item() 
-inspect_page()
-search_item_link(item_tag_url)
-for item_link in item_links:
-    print(f'{url}{item_link}')
+
+def simulate():
+    check_item() 
+    inspect_page()
+    search_item_link(item_tag_url)
 
 
+    
+    # for item_link in item_links:
+    #     print(f'{url}{item_link}')
+    # if check_merge():
+    #     find_merge_materials()
+    # parsed = [parse_item(item) for item in merge_items]
 
-if check_merge():
-    find_merge_materials()
+    # for item in parsed:
+    #     print(f"Item: {item['name']}, Quantity: {item['qty']}")
 
+    # for link in merge_links:
+    #     print(f'{url}{link}')
 
-
-parsed = [parse_item(item) for item in merge_items]
-
-for item in parsed:
-    print(f"Item: {item['name']}, Quantity: {item['qty']}")
-
-for link in merge_links:
-    print(f'{url}{link}')
+simulate()
 
