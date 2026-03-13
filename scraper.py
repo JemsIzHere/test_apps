@@ -45,7 +45,7 @@ class ACItem:
 
     def __init__(self, link: str):
         self.link = link
-        self.full_url = f"{BASE_URL}{link}"
+        self.full_url = f"{link}"
         self.doc = self._fetch()
         self.price = None
 
