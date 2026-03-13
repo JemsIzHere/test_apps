@@ -3,6 +3,7 @@ import requests
 import re
 
 BASE_URL = "http://aqwwiki.wikidot.com" 
+ITEM_TAGS = ["ac", "merge", "0-ac"]
 
 class ItemPage:
 
@@ -26,7 +27,7 @@ class ItemPage:
     # needs to categorize ac, merge, item links and prints them.
     def get_links(self) -> list:
         links = []
-        page_title = self.doc.find(id="page-title").get_text().strip().lower()
+        #page_title = self.doc.find(id="page-title").get_text().strip().lower()
         page_content = self.doc.find(id="page-content")
 
         if not page_content:
