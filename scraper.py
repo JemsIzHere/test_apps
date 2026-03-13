@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup as soup
-from config import item_types
+from config import item_tags
 import requests
 import re
 
@@ -46,20 +46,21 @@ class ItemPage:
 
         for link in self.get_links():
             part = link.split('-')[-1]            
-            tag = next((t for t in item_types if t in part), None)
+            tag = next((t for t in item_tags if t in part), None)
             if tag:
                 self.item_links[tag] = (f'{BASE_URL}{link}')
 
         return self.item_links
     
     # probably be used for debugging
-    def get_main_links(self) -> str:
+    def get_main_links(self) -> list:
         for tag,link in self.item_links.items():
             self.page_links.append(f'{tag}: {link}')
         return self.page_links
 
+    # check tags here then assign?
 
-class ACItem:
+class ACPage:
 
     def __init__(self, link: str):
         self.link = link
@@ -79,25 +80,30 @@ class ACItem:
 
     def get_price(self) -> str | None:
         page_content = self.doc.find(id="page-content")
-
         part = self.link.split('-')[-1]
-
+        ac_price = [p for p in page_content.find_all("p") if "Price:" in p.get_text()]
+        
         if part not in ITEM_TAGS:
             print('Not bought with ACs.')
             return None 
 
         if not page_content:
             return None
-
-        ac_price = [p for p in page_content.find_all("p") if "Price:" in p.get_text()]
+        
         for p in ac_price:
-            match = re.search(r"(\d+)\s*AC", p.get_text())
+            text = p.get_text()
+            match = re.search(r"(\d+)\s*AC", text)
+
+            if "N/A" in text:
+                self.price = 0
+                return self.price
+
             if match:
                 self.price = match.group(1)
                 return self.price
         return None
 
-class MergeItem:
+class MergePage:
 
     def __init__(self, link: str):
         self.link = link
@@ -118,7 +124,7 @@ class MergeItem:
                 return False
         return True
 
-class QuestItem:
+class QuestPage:
 
     def __init__(self, link: str):
         self.link = link

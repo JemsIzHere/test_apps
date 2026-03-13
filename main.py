@@ -1,5 +1,5 @@
-from scraper import ItemPage, ACItem, MergeItem, BASE_URL
-from config import item_types
+from scraper import ItemPage, ACPage, MergePage, BASE_URL
+from config import item_tags
 
 def main(search_item: str):
     page = ItemPage(search_item)
@@ -15,17 +15,19 @@ def main(search_item: str):
     for i in main_links:
         print(i)
 
-    # needs to be scalable
+
+
+
+
+    # needs to be scalable or most likely to be a part of later
     if 'ac' in item_links:
-        ac = ACItem(item_links['ac'])
+        ac = ACPage(item_links['ac'])
         print(f'{ac.get_price()} AC')
     
     if 'merge' in item_links:
-        merge = MergeItem(item_links['merge'])
+        merge = MergePage(item_links['merge'])
 
 
-# moved to ItemPage
-# def check_links(links):
 
 if __name__ == "__main__":
     print("Input item:")
