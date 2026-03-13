@@ -1,32 +1,32 @@
-from scraper import ItemPage, ACItem, BASE_URL
+from scraper import ItemPage, ACItem, MergeItem, BASE_URL
 from config import item_types
 
 def main(search_item: str):
     page = ItemPage(search_item)
-    page_links = page.get_links()
-    item_links = check_links(page_links)
-    ac_link = ACItem(item_links.get("ac"))
+    item_links = page.check_links()
+    main_links = page.get_main_links()
 
     if not page.exists():
         print('Item page does not exist.')
         return
 
     print(f'\nMain Page: {page.full_url}')
+
+    for i in main_links:
+        print(i)
+
+    # needs to be scalable
+    if 'ac' in item_links:
+        ac = ACItem(item_links['ac'])
+        print(f'{ac.get_price()} AC')
     
-    print(f'{ac_link.get_price()} AC')
-    # print(type_item)
+    if 'merge' in item_links:
+        merge = MergeItem(item_links['merge'])
 
-def check_links(links):
-    item_links = {}
 
-    for link in links:
-        part = link.split('-')[-1]            
-        tag = next((t for t in item_types if t in part), None)
-        if tag:
-            item_links[tag] = (f'{BASE_URL}{link}')
+# moved to ItemPage
+# def check_links(links):
 
-    return item_links
-    
 if __name__ == "__main__":
     print("Input item:")
     search_item = input().lower()
