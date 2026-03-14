@@ -8,13 +8,9 @@ ITEM_TAGS = ["ac", "merge", "0-ac"]
 
 class ItemPage:
 
-    def __init__(self, search_item: str):
-        self.search_item = search_item.lower()
-        self.search_url = self.search_item.replace(" ", "-")
-        self.full_url = f"{BASE_URL}/{self.search_url}"
+    def __init__(self, url: str):
+        self.full_url = url
         self.doc = self._fetch()
-        self.item_links = {}
-        self.page_links = []
     
     def _fetch(self):
         result = requests.get(self.full_url)
@@ -26,6 +22,24 @@ class ItemPage:
                 print("Item does not exist.")
                 return False
         return True
+
+    def process(self):
+        raise NotImplementedError(f"{self.__class__.__name__} must implement process()")
+
+    def summary(self) -> dict:
+        raise NotImplementedError(f"{self.__class__.__name__} must implement summary()")
+
+   
+
+class ItemSearch(ItemPage):
+
+    def __init__(self, search_item: str):
+        self.search_item = search_item.lower()
+        self.search_url = self.search_item.replace(" ", "-")
+        super().__init__ = f"{BASE_URL}/{self.search_url}"
+        self.doc = self._fetch()
+        self.item_links = {}
+        self.page_links = []
 
     def get_links(self) -> list:
         links = []
@@ -58,25 +72,21 @@ class ItemPage:
             self.page_links.append(f'{tag}: {link}')
         return self.page_links
 
-    # check tags here then assign?
+    def process(self):
+            raise NotImplementedError("Use check_links() to get item pages, then call process() on each.")
+    
+    def summary(self) -> dict:
+        return {
+            'search_item': self.search_item,
+            'full_url': self.full_url,
+            'item_links': self.item_links,
+        }
 
-class ACPage:
+class ACPage(ItemPage):
 
     def __init__(self, link: str):
-        self.link = link
-        self.full_url = f"{link}"
-        self.doc = self._fetch()
+        super().__init__(link)
         self.price = None
-
-    def _fetch(self):
-        result = requests.get(self.full_url)
-        return soup(result.text, "html.parser")
-    
-    def exists(self) -> bool:
-        for p in self.doc.find_all('strong'):
-            if "This page doesn't exist yet!" in p.get_text():
-                return False
-        return True
 
     def get_price(self) -> str | None:
         page_content = self.doc.find(id="page-content")
@@ -102,29 +112,35 @@ class ACPage:
                 self.price = match.group(1)
                 return self.price
         return None
+    
+    def process(self):
+        price = self.get_price()
+        if price == 0:
+            print('AC Price: N/A')
+        elif price:
+            print(f'AC Price: {price} AC')
+        else:
+            print('AC Price: 0')
 
-class MergePage:
+    def summary(self) -> dict:
+        return {
+            'type': 'ac',
+            'url': self.full_url,
+            'price': self.price,
+        }
+
+
+class MergePage(ItemPage):
 
     def __init__(self, link: str):
-        self.link = link
-        self.full_url = f"{link}"
-        self.doc = self._fetch()
-
+        super().__init__(link)      # INHERITANCE: calls WikiPage.__init__(), sets self.doc
         self.merge_name = None
-        self.materials = []     # list of { name, qty, link }
+        self.materials = []         # list of { name, qty, link }
+        self.gold_price = None
         self.is_parsed = False
 
-    def _fetch(self):
-        result = requests.get(self.full_url)
-        return soup(result.text, "html.parser")
 
-    def exists(self) -> bool:
-        for p in self.doc.find_all('strong'):
-            if "This page doesn't exist yet!" in p.get_text():
-                return False
-        return True
-
-class QuestPage:
+class QuestPage(ItemPage):
 
     def __init__(self, link: str):
         self.link = link
@@ -136,13 +152,3 @@ class QuestPage:
         self.rewards = []       # list of { name, qty }
         self.next_quest = None  # link to next quest in chain
         self.is_parsed = False
-
-    def _fetch(self):
-        result = requests.get(self.full_url)
-        return soup(result.text, "html.parser")
-    
-    def exists(self) -> bool:
-        for p in self.doc.find_all('strong'):
-            if "This page doesn't exist yet!" in p.get_text():
-                return False
-        return True
