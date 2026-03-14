@@ -29,14 +29,12 @@ class ItemPage:
     def summary(self) -> dict:
         raise NotImplementedError(f"{self.__class__.__name__} must implement summary()")
 
-   
-
 class ItemSearch(ItemPage):
 
     def __init__(self, search_item: str):
         self.search_item = search_item.lower()
         self.search_url = self.search_item.replace(" ", "-")
-        super().__init__ = f"{BASE_URL}/{self.search_url}"
+        super().__init__ (f"{BASE_URL}/{self.search_url}")
         self.doc = self._fetch()
         self.item_links = {}
         self.page_links = []
@@ -56,6 +54,9 @@ class ItemSearch(ItemPage):
 
         return links
     
+    def get_main_page(self) -> str:
+        return self.full_url
+
     def check_links(self) -> dict:
 
         for link in self.get_links():
@@ -86,6 +87,7 @@ class ACPage(ItemPage):
 
     def __init__(self, link: str):
         super().__init__(link)
+        self.link = link
         self.price = None
 
     def get_price(self) -> str | None:
@@ -129,11 +131,10 @@ class ACPage(ItemPage):
             'price': self.price,
         }
 
-
 class MergePage(ItemPage):
 
     def __init__(self, link: str):
-        super().__init__(link)      # INHERITANCE: calls WikiPage.__init__(), sets self.doc
+        super().__init__(link)      
         self.merge_name = None
         self.materials = []         # list of { name, qty, link }
         self.gold_price = None
