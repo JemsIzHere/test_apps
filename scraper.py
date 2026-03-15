@@ -197,6 +197,8 @@ class MergePage(ItemPage):
             if "Merge the following:" in li.get_text():
                 return True
         return False
+    
+    # Tree implementation
 
 class QuestPage(ItemPage):
 
