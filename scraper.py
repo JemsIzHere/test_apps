@@ -4,7 +4,7 @@ import requests
 import re
 
 BASE_URL = "http://aqwwiki.wikidot.com" 
-ITEM_TAGS = ["ac", "merge", "0-ac"]
+#ITEM_TAGS = ["ac", "merge", "0-ac"]
 
 class ItemPage:
 
@@ -38,7 +38,11 @@ class ItemSearch(ItemPage):
         self.doc = self._fetch()
         self.item_links = {}
         self.page_links = []
-
+        self.possible_items = []
+        
+    def get_main_page(self) -> str:
+        return self.full_url
+    
     def get_links(self) -> list:
         links = []
 
@@ -54,9 +58,49 @@ class ItemSearch(ItemPage):
 
         return links
     
-    def get_main_page(self) -> str:
-        return self.full_url
+    def get_possible_items(self) -> list:
+        for item in self.get_links():
+            part = item.split('-')[-1]            
+            tag = next((t for t in item_tags if t in part), None)
+            if tag:
+                self.possible_items.append(item)
 
+        return self.possible_items
+
+    def _extract_suffix(self, link: str) -> str:
+        return link.rsplit("-", 1)[-1].lower()
+
+    def categorize_links(self) -> ItemPage:
+        possible_items = self.possible_items
+
+        for items in possible_items:
+            suffix = self._extract_suffix(items)
+
+            if suffix == "ac":
+                ac_page = ACPage(f'{BASE_URL}{items}')
+                if ac_page.is_valid():
+                    ac_page.process()
+                    print("Valid Page!")
+                    return ac_page
+
+            if suffix in item_tags:
+                # Try MergePage first
+                merge_page = MergePage(f'{BASE_URL}{items}')
+                if merge_page.is_valid():
+                    print("Valid Page!")
+                    return merge_page
+
+                # Try QuestPage variants
+                quest_page = QuestPage(f'{BASE_URL}{items}')
+                if quest_page.is_valid():
+                    print("Valid Page!")
+                    return quest_page
+            else:
+                return print("Item not found.")
+
+
+
+    # used for debugging
     def check_links(self) -> dict:
 
         for link in self.get_links():
@@ -67,7 +111,6 @@ class ItemSearch(ItemPage):
 
         return self.item_links
     
-    # probably be used for debugging
     def get_main_links(self) -> list:
         for tag,link in self.item_links.items():
             self.page_links.append(f'{tag}: {link}')
@@ -95,7 +138,7 @@ class ACPage(ItemPage):
         part = self.link.split('-')[-1]
         ac_price = [p for p in page_content.find_all("p") if "Price:" in p.get_text()]
         
-        if part not in ITEM_TAGS:
+        if part != 'ac' :
             print('Not bought with ACs.')
             return None 
 
@@ -115,11 +158,20 @@ class ACPage(ItemPage):
                 return self.price
         return None
     
+    def is_valid(self) -> bool:
+        price = self.get_price()
+        
+        if price:
+            return True
+
+        return False
+
     def process(self):
         price = self.get_price()
         if price == 0:
             print('AC Price: N/A')
         elif price:
+            print(f'AC Link: {self.full_url}')
             print(f'AC Price: {price} AC')
         else:
             print('AC Price: 0')
@@ -140,6 +192,11 @@ class MergePage(ItemPage):
         self.gold_price = None
         self.is_parsed = False
 
+    def is_valid(self) -> bool:
+        for li in self.doc.find_all('li'):
+            if "Merge the following:" in li.get_text():
+                return True
+        return False
 
 class QuestPage(ItemPage):
 
@@ -153,3 +210,7 @@ class QuestPage(ItemPage):
         self.rewards = []       # list of { name, qty }
         self.next_quest = None  # link to next quest in chain
         self.is_parsed = False
+
+    def is_valid(self) -> bool:
+        """Merge page is valid if it contains 'merge the following'."""
+        return False
