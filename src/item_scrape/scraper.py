@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup as soup
-from config import item_tags
+from data_loader import item_tags
 import requests
 import re
 
@@ -199,6 +199,7 @@ class MergePage(ItemPage):
         return False
     
     # Tree implementation
+    
 
 class QuestPage(ItemPage):
 

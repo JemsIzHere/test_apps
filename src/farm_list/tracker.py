@@ -1,6 +1,5 @@
 import json
 from collections import defaultdict
-from scraper import ItemPage, ACItem, MergeItem, QuestItem, parse_item, BASE_URL
 
 with open('item_tag.json', 'r') as f:
     item_types = json.load(f)
