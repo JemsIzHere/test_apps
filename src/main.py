@@ -1,8 +1,9 @@
-from item_scrape.scraper import ItemSearch, ACPage, MergePage, BASE_URL
+from item_scrape.scraper import ItemSearch,MergePage
 from data_loader import item_tags
 
 def main(search_item: str):
     page = ItemSearch(search_item)
+    merge = MergePage('http://aqwwiki.wikidot.com/legion-doomblade-ac')
 
 
     search_link = page.get_main_page()
@@ -17,7 +18,7 @@ def main(search_item: str):
 
     page.categorize_links()
 
-
+    merge.process()
 
 
 if __name__ == "__main__":

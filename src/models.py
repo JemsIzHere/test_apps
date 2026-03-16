@@ -7,7 +7,7 @@ class Material:
     name: str
     quantity: int
     link: str
-    price: float
+    price: str
     prerequisites: list["Material"] = field(default_factory=list)
 
     def is_purchasable(self) -> bool:
