@@ -1,2 +1,5 @@
-/.vscode
-/__pycache__
+.vscode/
+__pycache__/
+item_scrape/__pycache__/
+farm_list/__pycache__/
+item_scrape.py

@@ -3,8 +3,7 @@ from data_loader import item_tags
 
 def main(search_item: str):
     page = ItemSearch(search_item)
-    # item_links = page.check_links()
-    # main_links = page.get_main_links()
+
 
     search_link = page.get_main_page()
 
@@ -18,15 +17,6 @@ def main(search_item: str):
 
     page.categorize_links()
 
-    # for i in main_links:
-    #     print(i)
-
-    # needs to be scalable or most likely to be a part of later
-    # if 'ac' in item_links:
-    #     ac = ACPage(item_links['ac'])
-    #     ac.process()
-    # if 'merge' in item_links:
-    #     merge = MergePage(item_links['merge'])
 
 
 
