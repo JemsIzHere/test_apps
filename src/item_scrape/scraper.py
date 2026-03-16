@@ -1,5 +1,7 @@
 from bs4 import BeautifulSoup as soup
+from collections import defaultdict
 from data_loader import item_tags
+from models import Material
 import requests
 import re
 
@@ -88,6 +90,7 @@ class ItemSearch(ItemPage):
                 merge_page = MergePage(f'{BASE_URL}{items}')
                 if merge_page.is_valid():
                     print("Valid Page!")
+                    merge_page.process()
                     return merge_page
 
                 # Try QuestPage variants
@@ -188,18 +191,149 @@ class MergePage(ItemPage):
     def __init__(self, link: str):
         super().__init__(link)      
         self.merge_name = None
-        self.materials = []         # list of { name, qty, link }
+        #self.materials = []         # list of { name, qty, link }
         self.gold_price = None
         self.is_parsed = False
+        self._root_children: list[Material] = []
 
+    # Might have to change validation
     def is_valid(self) -> bool:
         for li in self.doc.find_all('li'):
             if "Merge the following:" in li.get_text():
                 return True
         return False
     
-    # Tree implementation
+    def get_merge_items(self):
+        merge_items = None
+        for li in self.doc.find_all('li'):
+            if "Merge the following" in li.get_text():
+                merge_items = li
+                return merge_items
+        return None
+
     
+    # Tree implementation
+    def _build_item_tree(self, page_doc, visited: set) -> list[Material]:
+        nodes = []
+        page_content = page_doc.find(id="page-content")
+        merge_section = self.get_merge_items()
+        if not page_content:
+            return nodes
+        
+        if not merge_section:
+            return nodes
+        
+        for item_li in merge_section.find_next_siblings('li'):
+            text = item_li.get_text(strip=True)
+
+            qty_match = re.search(r'x(\d+)', text)
+            quantity = int(qty_match.group(1)) if qty_match else 1
+            name = re.sub(r'x\d+', '', text).strip()
+            a_tag = item_li.find('a')
+            link = a_tag['href'] if a_tag and a_tag.get('href') else ""
+
+            price, price_type = self._parse_price(text)
+
+            if name in visited:
+                print(f"  [!] Circular reference detected at '{name}' — stopping.")
+                continue
+
+            children = []
+            if link:
+                child_url = f"{BASE_URL}{link}"
+                child_result = requests.get(child_url)
+                child_doc = soup(child_result.text, "html.parser")
+                child_visited = visited | {name}
+                children = self._build_item_tree(child_doc, child_visited)
+
+            nodes.append(Material(
+                name=name,
+                quantity=quantity,
+                link=link,
+                price=price,
+                children=children,
+            ))
+
+        return nodes
+
+    def parse(self):
+        if self.is_parsed:
+            print("parsed!")
+            return
+        self._root_children = self._build_item_tree(self.doc, visited=set())
+        self.is_parsed = True
+
+    def _parse_price(self, text: str) -> tuple[str, str]:
+        """Returns (price_display, price_type)"""
+        if "N/A" in text:
+            return "N/A", "n/a"
+        
+        ac_match = re.search(r'(\d+)\s*AC', text)
+        if ac_match:
+            return f"{ac_match.group(1)} AC", "ac"
+        
+        gold_match = re.search(r'(\d+)\s*[Gg]old', text)
+        if gold_match:
+            return f"{gold_match.group(1)} Gold", "gold"
+        
+        return "N/A", "n/a"
+
+    def _flatten(self, nodes: list[Material]) -> list[Material]:
+        result = []
+        for node in nodes:
+            result.append(node)
+            if node.children:
+                result.extend(self._flatten(node.children))
+        return result
+
+    def _consolidated(self) -> dict[str, dict]:
+        totals = defaultdict(lambda: {"quantity": 0, "price": 0.0, "link": ""})
+        for m in self._flatten(self._root_children):
+            totals[m.name]["quantity"] += m.quantity
+            totals[m.name]["price"] = m.price
+            totals[m.name]["price_type"] = m.price_type
+            totals[m.name]["link"] = m.link
+        return totals
+
+    def _print_tree(self, nodes: list[Material], depth: int = 0):
+        for node in nodes:
+            prefix = "  " * depth
+            price_str = f"{node.price} AC" if node.is_purchasable() else "Quest Reward"
+            print(f"{prefix}- {node.name} x{node.quantity} | {price_str} | {node.link}")
+            if node.children:
+                self._print_tree(node.children, depth + 1)
+
+    # inherited
+    def process(self):
+        self.parse()
+
+        print(f"\n--- Merge Tree: {self.full_url} ---")
+        self._print_tree(self._root_children)
+
+        print(f"\n--- Consolidated Materials ---")
+        for name, data in self._consolidated().items():
+            price_str = f"{data['price']} AC" if data["price"] > 0 else "Quest Reward"
+            print(f"- {name} x{data['quantity']} | {price_str} | {data['link']}")
+
+        consolidated = self._consolidated()
+        print(f"\nTotal Unique Materials: {len(consolidated)}")
+        print(f"Total Material Count:   {sum(d['quantity'] for d in consolidated.values())}")
+        print(f"Total Price:            {sum(d['price'] * d['quantity'] for d in consolidated.values())} AC")
+
+    def summary(self) -> dict:
+        self.parse()
+        consolidated = self._consolidated()
+        return {
+            'type': 'merge',
+            'url': self.full_url,
+            'materials': [
+                {'name': n, 'quantity': d['quantity'], 'price': d['price'], 'link': d['link']}
+                for n, d in consolidated.items()
+            ],
+            'total_unique_materials': len(consolidated),
+            'total_material_count': sum(d['quantity'] for d in consolidated.values()),
+            'total_price': sum(d['price'] * d['quantity'] for d in consolidated.values()),
+        }
 
 class QuestPage(ItemPage):
 
