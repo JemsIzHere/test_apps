@@ -1,5 +1,5 @@
-.vscode/
 __pycache__/
-item_scrape/__pycache__/
-farm_list/__pycache__/
-item_scrape.py
+.vscode/
+.venv/
+*.pyc
+.test_files
