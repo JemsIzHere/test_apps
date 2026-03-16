@@ -1,5 +1,5 @@
-from scraper import ItemSearch, ACPage, MergePage, BASE_URL
-from config import item_tags
+from item_scrape.scraper import ItemSearch, ACPage, MergePage, BASE_URL
+from data_loader import item_tags
 
 def main(search_item: str):
     page = ItemSearch(search_item)
