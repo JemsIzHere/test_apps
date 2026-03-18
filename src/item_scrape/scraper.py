@@ -1,5 +1,7 @@
 from bs4 import BeautifulSoup as soup
+from collections import defaultdict
 from data_loader import item_tags
+from models import Material
 import requests
 import re
 
@@ -89,6 +91,7 @@ class ItemSearch(ItemPage):
                 merge_page = MergePage(f'{BASE_URL}{items}')
                 if merge_page.is_valid():
                     #print("Valid Page!")
+                    merge_page.process()
                     #merge_page.is_base_item = True
                     merge_page.process()
                     continue
@@ -196,6 +199,7 @@ class MergePage(ItemPage):
         self.is_parsed = False
         self.is_base_item = True
 
+    # Might have to change validation
     def is_valid(self) -> bool:
         for li in self.doc.find_all('li'):
             if "Merge the following:" in li.get_text():
