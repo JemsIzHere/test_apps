@@ -72,6 +72,7 @@ class ItemSearch(ItemPage):
 
     def categorize_links(self) -> ItemPage:
         possible_items = self.possible_items
+        #pages = [ItemPage]
 
         for items in possible_items:
             suffix = self._extract_suffix(items)
@@ -79,16 +80,18 @@ class ItemSearch(ItemPage):
             if suffix == "ac":
                 ac_page = ACPage(f'{BASE_URL}{items}')
                 if ac_page.is_valid():
+                    #print("Valid Page!")
                     ac_page.process()
-                    print("Valid Page!")
-                    return ac_page
+                    continue
 
             if suffix in item_tags:
                 # Try MergePage first
                 merge_page = MergePage(f'{BASE_URL}{items}')
                 if merge_page.is_valid():
-                    print("Valid Page!")
-                    return merge_page
+                    #print("Valid Page!")
+                    #merge_page.is_base_item = True
+                    merge_page.process()
+                    continue
 
                 # Try QuestPage variants
                 quest_page = QuestPage(f'{BASE_URL}{items}')
@@ -187,10 +190,11 @@ class MergePage(ItemPage):
 
     def __init__(self, link: str):
         super().__init__(link)      
-        self.merge_name = None
-        self.materials = []         # list of { name, qty, link }
+        self.merge_item_name = []
+        self.merge_links = []         # list of { name, qty, link }
         self.gold_price = None
         self.is_parsed = False
+        self.is_base_item = True
 
     def is_valid(self) -> bool:
         for li in self.doc.find_all('li'):
@@ -198,8 +202,73 @@ class MergePage(ItemPage):
                 return True
         return False
     
+    # change for self.doc
+    def fetch_material_url(self,url):
+        result = requests.get(url)
+        return soup(result.text, "html.parser")
+    
+    # initial check
+    def set_base_item(self, value: bool):
+        self.is_base_item = value
+
+    def check_merge(self, link):
+        sub_link = link
+
+        for li in sub_link.find_all('li'):
+            if "Merge the following:" in li.get_text():
+                return li
+        
+        return None
+    
+    def add_to_merge_list(self, items):
+        for item_li in items[1:]:
+
+            a_tag = item_li.find('a')
+            if a_tag:
+                self.merge_links.append(f'{BASE_URL}{a_tag.get('href')}')
+            
+            self.merge_item_name.append(f'{item_li.get_text(strip=True)}')
+
+    def find_merge_materials(self,link):
+
+        merge_li = self.check_merge(link)
+
+        if merge_li:
+            
+            all_items = merge_li.find_parent('ul').find_all('li')
+            self.add_to_merge_list(all_items)
+
+        else:
+            return None
+        
     # Tree implementation
     
+
+    # inherited
+    def process(self):
+        print(f'Merge Link: {self.full_url}')
+
+        if  self.is_base_item:
+            self.find_merge_materials(self.doc)
+            
+        self.set_base_item(False)
+
+        for i in self.merge_links:
+
+            item = self.fetch_material_url(i)
+            self.find_merge_materials(item)
+
+        for item_name, item_link in zip(self.merge_item_name, self.merge_links):
+            print(f'\nItem: {item_name}\nLink:{BASE_URL}{item_link}')
+        
+
+    def summary(self) -> dict:
+        return {
+            'type': 'merge',
+            'url': self.full_url
+        }
+    
+
 
 class QuestPage(ItemPage):
 
