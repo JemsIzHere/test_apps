@@ -90,9 +90,6 @@ class ItemSearch(ItemPage):
                 # Try MergePage first
                 merge_page = MergePage(f'{BASE_URL}{items}')
                 if merge_page.is_valid():
-                    #print("Valid Page!")
-                    merge_page.process()
-                    #merge_page.is_base_item = True
                     merge_page.process()
                     continue
 
@@ -189,13 +186,42 @@ class ACPage(ItemPage):
             'price': self.price,
         }
 
+class MaterialTree:
+    def __init__(self, root: Material):
+            self.root = root
+
+    def add_prerequisite(self, parent_name: str, prereq: Material):
+        parent = self.find(self.root, parent_name)
+        if parent is None:
+            raise ValueError(f"'{parent_name}' not found")
+        parent.prerequisites.append(prereq)
+
+    def find(self, node: Material, name: str) -> Material | None:
+        if node is None:
+            return None
+        if node.name == name:
+            return node
+        for prereq in node.prerequisites:
+            result = self.find(prereq, name)
+            if result:
+                return result
+        return None
+
+    def print_tree(self, node: Material = None, prefix="", is_last=True):
+        if node is None:
+            node = self.root
+        connector = "" if prefix == "" else ("└── " if is_last else "├── ")
+        print(prefix + connector + node.name)
+        child_prefix = prefix + ("    " if is_last else "│   ")
+        for i, prereq in enumerate(node.prerequisites):
+            self.print_tree(prereq, child_prefix, i == len(node.prerequisites) - 1)
+
 class MergePage(ItemPage):
 
     def __init__(self, link: str):
         super().__init__(link)      
         self.merge_item_name = []
-        self.merge_links = []         # list of { name, qty, link }
-        self.gold_price = None
+        self.merge_links = []        
         self.is_parsed = False
         self.is_base_item = True
 
@@ -216,9 +242,9 @@ class MergePage(ItemPage):
         self.is_base_item = value
 
     def check_merge(self, link):
-        sub_link = link
+        merge_link = self.fetch_material_url(link)
 
-        for li in sub_link.find_all('li'):
+        for li in merge_link.find_all('li'):
             if "Merge the following:" in li.get_text():
                 return li
         
@@ -231,7 +257,7 @@ class MergePage(ItemPage):
             if a_tag:
                 self.merge_links.append(f'{BASE_URL}{a_tag.get('href')}')
             
-            self.merge_item_name.append(f'{item_li.get_text(strip=True)}')
+                self.merge_item_name.append(f'{item_li.get_text(strip=True)}')
 
     def find_merge_materials(self,link):
 
@@ -246,24 +272,50 @@ class MergePage(ItemPage):
             return None
         
     # Tree implementation
+    def set_root(self) -> Material:
+        item_name = self.doc.find(id="page-title").get_text(strip=True)
+        root_material = Material(name=item_name, link=self.full_url)
+
+        return root_material
     
+    def build_tree(self) -> MaterialTree:
+        root_material = self.set_root()
+        tree = MaterialTree(root=root_material)
+        self._build_recursive(root_material)
+        return tree
+
+    def _build_recursive(self, parent: Material):
+        if  self.is_base_item:
+            self.find_merge_materials(parent.link)
+
+        for name, link in zip(self.merge_item_name[0:], self.merge_links):
+            child = Material(name=name, link=link)
+            parent.prerequisites.append(child)
+            
+            if not self.is_base_item:
+                child_page = MergePage(link)
+                child_page._build_recursive(child)
 
     # inherited
     def process(self):
         print(f'Merge Link: {self.full_url}')
 
         if  self.is_base_item:
-            self.find_merge_materials(self.doc)
-            
+            self.find_merge_materials(self.full_url)
+
         self.set_base_item(False)
 
-        for i in self.merge_links:
+        tree = self.build_tree()
+        tree.print_tree()
+        # print(self.merge_item_name[0:])
+        # print(self.merge_links[0:])
+        # for i in self.merge_links:
 
-            item = self.fetch_material_url(i)
-            self.find_merge_materials(item)
+        #     item = self.fetch_material_url(i)
+        #     self.find_merge_materials(item)
 
-        for item_name, item_link in zip(self.merge_item_name, self.merge_links):
-            print(f'\nItem: {item_name}\nLink:{BASE_URL}{item_link}')
+        # for item_name, item_link in zip(self.merge_item_name, self.merge_links):
+        #     print(f'\nItem: {item_name}\nLink:{item_link}')
         
 
     def summary(self) -> dict:
@@ -271,7 +323,6 @@ class MergePage(ItemPage):
             'type': 'merge',
             'url': self.full_url
         }
-    
 
 
 class QuestPage(ItemPage):
