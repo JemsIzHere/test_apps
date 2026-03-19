@@ -3,7 +3,7 @@ from data_loader import item_tags
 
 def main(search_item: str):
     page = ItemSearch(search_item)
-    merge = MergePage('http://aqwwiki.wikidot.com/legion-doomblade-ac')
+    merge = MergePage('http://aqwwiki.wikidot.com/necrotic-sword-of-doom-sword')
 
 
     search_link = page.get_main_page()
@@ -18,7 +18,7 @@ def main(search_item: str):
 
     page.categorize_links()
 
-    merge.process()
+    # merge.process()
 
 
 if __name__ == "__main__":
