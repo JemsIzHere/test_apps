@@ -278,6 +278,15 @@ class MergePage(ItemPage):
 
         return root_material
     
+    def get_current_list(self) -> dict:
+        current_list = {}
+
+        for name, link in zip(self.merge_item_name, self.merge_links):
+            current_list[name] = link
+        return current_list
+
+
+
     def build_tree(self) -> MaterialTree:
         root_material = self.set_root()
         tree = MaterialTree(root=root_material)
@@ -285,13 +294,22 @@ class MergePage(ItemPage):
         return tree
 
     def _build_recursive(self, parent: Material):
-        if  self.is_base_item:
-            self.find_merge_materials(parent.link)
 
-        for name, link in zip(self.merge_item_name[0:], self.merge_links):
-            child = Material(name=name, link=link)
+        link = self.full_url if self.is_base_item else parent.link
+        self.find_merge_materials(link)
+        self.set_base_item(False)
+
+        current_list = self.get_current_list()
+        self.merge_item_name.clear()
+        self.merge_links.clear()
+
+        # set lists to empty
+        # need to stop repeating 
+
+        for name,link in current_list.items():
+            child = Material(name=name, link=link) # change
             parent.prerequisites.append(child)
-            
+
             if not self.is_base_item:
                 child_page = MergePage(link)
                 child_page._build_recursive(child)
@@ -299,23 +317,12 @@ class MergePage(ItemPage):
     # inherited
     def process(self):
         print(f'Merge Link: {self.full_url}')
-
-        if  self.is_base_item:
-            self.find_merge_materials(self.full_url)
-
-        self.set_base_item(False)
-
+        # self.find_merge_materials(self.full_url)
+        # current = self.get_current_list()
+        # print(current)
+        print("Building Item Tree....")
         tree = self.build_tree()
         tree.print_tree()
-        # print(self.merge_item_name[0:])
-        # print(self.merge_links[0:])
-        # for i in self.merge_links:
-
-        #     item = self.fetch_material_url(i)
-        #     self.find_merge_materials(item)
-
-        # for item_name, item_link in zip(self.merge_item_name, self.merge_links):
-        #     print(f'\nItem: {item_name}\nLink:{item_link}')
         
 
     def summary(self) -> dict:
