@@ -18,6 +18,11 @@ class ItemPage:
         result = requests.get(self.full_url)
         return soup(result.text, "html.parser")
     
+    # recheck for redundancy
+    def fetch_item_url(self,url):
+        result = requests.get(url)
+        return soup(result.text, "html.parser")
+    
     def exists(self) -> bool:
         for p in self.doc.find_all('strong'):
             if "This page doesn't exist yet!" in p.get_text():
@@ -216,6 +221,14 @@ class MaterialTree:
         for i, prereq in enumerate(node.prerequisites):
             self.print_tree(prereq, child_prefix, i == len(node.prerequisites) - 1)
 
+    def save_tree(self, filename="output.txt"):
+        import sys
+        original = sys.stdout
+        with open(filename, "w", encoding="utf-8") as f:
+            sys.stdout = f        # redirect print to file
+            self.print_tree()
+            sys.stdout = original # restore print
+
 class MergePage(ItemPage):
 
     def __init__(self, link: str):
@@ -233,9 +246,9 @@ class MergePage(ItemPage):
         return False
     
     # change for self.doc
-    def fetch_material_url(self,url):
-        result = requests.get(url)
-        return soup(result.text, "html.parser")
+    # def fetch_item_url(self,url):
+    #     result = requests.get(url)
+    #     return soup(result.text, "html.parser")
     
     # initial check
     def set_base_item(self, value: bool):
@@ -250,7 +263,7 @@ class MergePage(ItemPage):
         return {"name": name, "qty": qty}
     
     def check_merge(self, link):
-        merge_link = self.fetch_material_url(link)
+        merge_link = self.fetch_item_url(link)
 
         for li in merge_link.find_all('li'):
             if "Merge the following:" in li.get_text():
@@ -311,9 +324,6 @@ class MergePage(ItemPage):
         self.merge_item_name.clear()
         self.merge_links.clear()
 
-        # set lists to empty
-        # need to stop repeating 
-
         for name,link in current_list.items():
             formatted_name = self.format_name(name)
             child = Material(name=formatted_name["name"],quantity=formatted_name["qty"], link=link) # change
@@ -326,13 +336,11 @@ class MergePage(ItemPage):
     # inherited
     def process(self):
         print(f'Merge Link: {self.full_url}')
-        # self.find_merge_materials(self.full_url)
-        # current = self.get_current_list()
-        # print(current)
+
         print("Building Item Tree....")
         tree = self.build_tree()
         tree.print_tree()
-        
+        tree.save_tree()
 
     def summary(self) -> dict:
         return {
@@ -340,20 +348,45 @@ class MergePage(ItemPage):
             'url': self.full_url
         }
 
-
 class QuestPage(ItemPage):
 
     def __init__(self, link: str):
-        self.link = link
-        self.full_url = f"{BASE_URL}{link}"
-        self.doc = self._fetch()
+        super().__init__(link)  
+        self.questline = []
 
-        self.quest_name = None
-        self.requirements = []  # list of { name, qty }
-        self.rewards = []       # list of { name, qty }
-        self.next_quest = None  # link to next quest in chain
-        self.is_parsed = False
+    def is_quest_reward(self) -> bool:
+        """Merge page is valid if it contains 'merge the following'."""
+        return False
+    
+    
+    # search also needs to check for apostrophes ' 
+    def is_shop_item(self) -> bool:
+        strong_tag = self.doc.find('strong', string='Location:')
+        a_tag = strong_tag.find_next('a').get('href')
 
+        shop_link = self.fetch_item_url(f'{BASE_URL}{a_tag}')
+        breadcrumbs = shop_link.find(id='breadcrumbs')
+        shops_a = breadcrumbs.find('a', string=lambda t: t and 'Shops' in t)
+
+        page_content = shop_link.find(id='page-content')
+        strong_note = page_content.find('strong', string ='Note:')
+        quest_req = strong_note.next_sibling
+
+        return bool(shops_a) and 'Must have completed the' in quest_req
+    
     def is_valid(self) -> bool:
         """Merge page is valid if it contains 'merge the following'."""
         return False
+    
+
+    # inherited
+    def process(self):
+        print(f'Quest Link: {self.full_url}')
+        print("Quest valid!")
+        #validate
+
+    def summary(self) -> dict:
+        return {
+            'type': 'quest',
+            'url': self.full_url
+        }
