@@ -211,7 +211,7 @@ class MaterialTree:
         if node is None:
             node = self.root
         connector = "" if prefix == "" else ("└── " if is_last else "├── ")
-        print(prefix + connector + node.name)
+        print(f'{prefix}{connector} {node.name} x{str(node.quantity)}')
         child_prefix = prefix + ("    " if is_last else "│   ")
         for i, prereq in enumerate(node.prerequisites):
             self.print_tree(prereq, child_prefix, i == len(node.prerequisites) - 1)
@@ -241,6 +241,14 @@ class MergePage(ItemPage):
     def set_base_item(self, value: bool):
         self.is_base_item = value
 
+    def format_name(self, item) -> dict:
+        match = re.search(r"x(\d+)", item)
+        if match:
+            qty = int(match.group(1))
+            name = re.sub(r"\s*x\d+", "", item).strip() 
+
+        return {"name": name, "qty": qty}
+    
     def check_merge(self, link):
         merge_link = self.fetch_material_url(link)
 
@@ -274,7 +282,7 @@ class MergePage(ItemPage):
     # Tree implementation
     def set_root(self) -> Material:
         item_name = self.doc.find(id="page-title").get_text(strip=True)
-        root_material = Material(name=item_name, link=self.full_url)
+        root_material = Material(name=item_name, quantity=1, link=self.full_url)
 
         return root_material
     
@@ -307,7 +315,8 @@ class MergePage(ItemPage):
         # need to stop repeating 
 
         for name,link in current_list.items():
-            child = Material(name=name, link=link) # change
+            formatted_name = self.format_name(name)
+            child = Material(name=formatted_name["name"],quantity=formatted_name["qty"], link=link) # change
             parent.prerequisites.append(child)
 
             if not self.is_base_item:

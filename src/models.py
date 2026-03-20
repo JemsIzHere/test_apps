@@ -5,7 +5,7 @@ from collections import defaultdict
 @dataclass
 class Material:
     name: str
-    # quantity: int
+    quantity: int
     link: str
     # price: str
     prerequisites: list["Material"] = field(default_factory=list)
