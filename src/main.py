@@ -4,7 +4,7 @@ from data_loader import item_tags
 def main(search_item: str):
     page = ItemSearch(search_item)
     merge = MergePage('http://aqwwiki.wikidot.com/necrotic-sword-of-doom-sword')
-    quest = QuestPage('http://aqwwiki.wikidot.com/king-s-echo')
+    quest = QuestPage('http://aqwwiki.wikidot.com/legion-revenant-class')
 
     #search_link = page.get_main_page()
 
@@ -16,7 +16,7 @@ def main(search_item: str):
 
     #print(f'\nMain Page: {search_link}')
 
-    print(quest.is_shop_item())
+    print(quest.is_valid())
 
     # page.categorize_links()
 

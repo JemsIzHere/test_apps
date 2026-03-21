@@ -355,11 +355,13 @@ class QuestPage(ItemPage):
         self.questline = []
 
     def is_quest_reward(self) -> bool:
-        """Merge page is valid if it contains 'merge the following'."""
-        return False
+        strong_price = self.doc.find('strong', string='Price:')
+        quest_req = strong_price.next_sibling
+
+        return 'N/A (Reward from the' in quest_req
     
     
-    # search also needs to check for apostrophes ' 
+
     def is_shop_item(self) -> bool:
         strong_tag = self.doc.find('strong', string='Location:')
         a_tag = strong_tag.find_next('a').get('href')
@@ -375,7 +377,8 @@ class QuestPage(ItemPage):
         return bool(shops_a) and 'Must have completed the' in quest_req
     
     def is_valid(self) -> bool:
-        """Merge page is valid if it contains 'merge the following'."""
+        if self.is_quest_reward() or self.is_shop_item():
+            return True
         return False
     
 
